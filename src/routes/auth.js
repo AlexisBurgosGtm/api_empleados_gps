@@ -12,26 +12,33 @@ router.post('/login', async (req, res) => {
     return res.status(400).json({ message: 'Usuario y contraseña son requeridos' });
   }
 
+  if (!process.env.JWT_SECRET) {
+    console.error('JWT_SECRET no configurado');
+    return res.status(500).json({ message: 'Servidor no configurado correctamente' });
+  }
+
   try {
     const pool = await getPool();
     const result = await pool
       .request()
-      .input('empnit', sql.VarChar, empnit)
-      .input('clave', sql.VarChar, clave)
+      .input('empnit', sql.VarChar(50), empnit)
+      .input('clave', sql.VarChar(250), clave)
       .query(`
         SELECT EMPNIT, EMPRESA
         FROM EMPRESAS
-        WHERE EMPNIT = @empnit AND CLAVE = @clave
+        WHERE RTRIM(LTRIM(EMPNIT)) = @empnit
+          AND RTRIM(LTRIM(CLAVE)) = @clave
+          AND RTRIM(LTRIM(HABILITADO)) = 'SI'
       `);
 
     const empresa = result.recordset[0];
 
     if (!empresa) {
-      return res.status(401).json({ message: 'Credenciales incorrectas' });
+      return res.status(401).json({ message: 'Usuario o contraseña incorrectos' });
     }
 
     const token = jwt.sign(
-      { empnit: empresa.EMPNIT, empresa: empresa.EMPRESA },
+      { empnit: empresa.EMPNIT.trim(), empresa: empresa.EMPRESA.trim() },
       process.env.JWT_SECRET,
       { expiresIn: '12h' },
     );

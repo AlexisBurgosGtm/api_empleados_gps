@@ -224,10 +224,19 @@ loginForm.addEventListener('submit', async (event) => {
       body: JSON.stringify({ empnit, clave }),
     });
 
-    const payload = await response.json();
+    let payload = {};
+    try {
+      payload = await response.json();
+    } catch {
+      throw new Error('Respuesta invalida del servidor');
+    }
 
     if (!response.ok) {
-      throw new Error(payload.message || 'Credenciales incorrectas');
+      if (response.status === 401) {
+        throw new Error('Usuario o contraseña incorrectos');
+      }
+
+      throw new Error(payload.message || 'No se pudo iniciar sesión');
     }
 
     saveSession(payload);
