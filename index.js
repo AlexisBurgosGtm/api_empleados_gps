@@ -4,6 +4,8 @@ import cors from 'cors';
 import express from 'express';
 import sql from 'mssql';
 
+import { renderHomePage } from './homePage.js';
+
 const app = express();
 const port = Number(process.env.PORT ?? 7000);
 
@@ -35,6 +37,29 @@ const getPool = async () => {
 
 app.use(cors());
 app.use(express.json());
+
+app.get('/', async (_req, res) => {
+  try {
+    const pool = await getPool();
+    const result = await pool.request().query(`
+      SELECT TOP 100 CODIGO, FECHA, HORA, LATITUD, LONGITUD
+      FROM EMPLEADOS_GPS
+      ORDER BY FECHA DESC, HORA DESC
+    `);
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    return res.send(renderHomePage(result.recordset));
+  } catch (error) {
+    console.error('Home page query error:', error);
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    return res.status(500).send(
+      renderHomePage(
+        [],
+        error instanceof Error ? error.message : 'Error al cargar registros',
+      ),
+    );
+  }
+});
 
 app.get('/health', (_req, res) => {
   res.json({ ok: true });
@@ -74,6 +99,10 @@ app.post('/api/gps', async (req, res) => {
       message: error instanceof Error ? error.message : 'Error al insertar en SQL Server',
     });
   }
+});
+
+app.use((_req, res) => {
+  res.status(404).json({ message: 'Ruta no encontrada' });
 });
 
 app.listen(port, () => {
