@@ -4,14 +4,29 @@ const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
+const parseFechaQuery = (value) => {
+  const fecha = String(value ?? '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+    return null;
+  }
+
+  return fecha;
+};
+
 router.get('/', authMiddleware, async (req, res) => {
   const empnit = req.user.empnit;
+  const fecha = parseFechaQuery(req.query.fecha);
+
+  if (!fecha) {
+    return res.status(400).json({ message: 'Fecha invalida o requerida' });
+  }
 
   try {
     const pool = await getPool();
     const result = await pool
       .request()
-      .input('empnit', sql.VarChar, empnit)
+      .input('empnit', sql.VarChar(50), empnit)
+      .input('fecha', sql.Date, fecha)
       .query(`
         WITH ranked AS (
           SELECT
@@ -23,12 +38,14 @@ router.get('/', authMiddleware, async (req, res) => {
             LONGITUD,
             ROW_NUMBER() OVER (
               PARTITION BY CODIGO
-              ORDER BY FECHA DESC, HORA DESC
+              ORDER BY HORA DESC
             ) AS rn
           FROM data_tracking
           WHERE EMPNIT = @empnit
+            AND FECHA = @fecha
             AND LATITUD IS NOT NULL
             AND LONGITUD IS NOT NULL
+            AND LATITUD <> 0
         )
         SELECT CODIGO, EMPLEADO, FECHA, HORA, LATITUD, LONGITUD
         FROM ranked
@@ -48,6 +65,7 @@ router.get('/', authMiddleware, async (req, res) => {
     return res.json({
       empresa: req.user.empresa,
       empnit: req.user.empnit,
+      fecha,
       empleados,
     });
   } catch (error) {
@@ -84,9 +102,14 @@ const formatTime = (value) => {
 router.get('/:codigo', authMiddleware, async (req, res) => {
   const empnit = req.user.empnit;
   const codigo = String(req.params.codigo ?? '').trim();
+  const fecha = parseFechaQuery(req.query.fecha);
 
   if (!codigo) {
     return res.status(400).json({ message: 'Codigo de empleado requerido' });
+  }
+
+  if (!fecha) {
+    return res.status(400).json({ message: 'Fecha invalida o requerida' });
   }
 
   try {
@@ -113,10 +136,12 @@ router.get('/:codigo', authMiddleware, async (req, res) => {
     const registrosResult = await pool
       .request()
       .input('codigo', sql.VarChar(50), codigo)
+      .input('fecha', sql.Date, fecha)
       .query(`
         SELECT ID, HORA, LATITUD, LONGITUD
         FROM EMPLEADOS_GPS
         WHERE CODIGO = @codigo
+          AND FECHA = @fecha
         ORDER BY ID
       `);
 
@@ -147,6 +172,7 @@ router.get('/:codigo', authMiddleware, async (req, res) => {
     return res.json({
       codigo: empleado.CODIGO,
       empleado: empleado.EMPLEADO,
+      fecha,
       conUbicacion,
       sinUbicacion,
     });

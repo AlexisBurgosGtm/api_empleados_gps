@@ -75,6 +75,8 @@
           <h2 id="empresa-nombre" class="header-title">—</h2>
         </div>
         <div class="header-actions">
+          <label class="date-filter-label" for="fecha-filtro">Fecha</label>
+          <input type="date" id="fecha-filtro" class="form-control form-control-sm date-filter" />
           <span id="empleados-count" class="header-meta">0 empleados</span>
           <button type="button" class="btn btn-outline-light btn-sm" id="refresh-btn">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1">
@@ -112,6 +114,7 @@
           </div>
         </div>
         <div class="header-actions">
+          <span id="employee-fecha" class="header-meta"></span>
           <span id="employee-codigo" class="header-meta"></span>
         </div>
       </header>

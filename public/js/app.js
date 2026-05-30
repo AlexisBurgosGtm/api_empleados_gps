@@ -12,9 +12,11 @@ const empresaNombre = document.getElementById('empresa-nombre');
 const empleadosCount = document.getElementById('empleados-count');
 const refreshBtn = document.getElementById('refresh-btn');
 const logoutBtn = document.getElementById('logout-btn');
+const fechaFiltro = document.getElementById('fecha-filtro');
 const mapLoading = document.getElementById('map-loading');
 const backBtn = document.getElementById('back-btn');
 const employeeNombre = document.getElementById('employee-nombre');
+const employeeFecha = document.getElementById('employee-fecha');
 const employeeCodigo = document.getElementById('employee-codigo');
 const sinUbicacionCount = document.getElementById('sin-ubicacion-count');
 const sinUbicacionBody = document.getElementById('sin-ubicacion-body');
@@ -26,6 +28,30 @@ let markersLayer = null;
 let employeeMarkersLayer = null;
 let session = null;
 let selectedEmployee = null;
+
+const getTodayInputValue = () => {
+  const now = new Date();
+  const pad = (value) => String(value).padStart(2, '0');
+
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+};
+
+const getSelectedFecha = () => fechaFiltro.value || getTodayInputValue();
+
+const formatFechaDisplay = (fecha) => {
+  const [year, month, day] = fecha.split('-');
+  if (!year || !month || !day) {
+    return fecha;
+  }
+
+  return `${day}/${month}/${year}`;
+};
+
+const initFechaFiltro = () => {
+  if (!fechaFiltro.value) {
+    fechaFiltro.value = getTodayInputValue();
+  }
+};
 
 const getSession = () => {
   try {
@@ -268,9 +294,13 @@ const loadEmployeeDetail = async (codigo) => {
   setEmployeeLoading(true);
 
   try {
-    const response = await fetch(`/api/tracking/${encodeURIComponent(codigo)}`, {
-      headers: authHeaders(),
-    });
+    const fecha = getSelectedFecha();
+    const response = await fetch(
+      `/api/tracking/${encodeURIComponent(codigo)}?fecha=${encodeURIComponent(fecha)}`,
+      {
+        headers: authHeaders(),
+      },
+    );
 
     const payload = await response.json();
 
@@ -285,6 +315,7 @@ const loadEmployeeDetail = async (codigo) => {
 
     selectedEmployee = payload;
     employeeNombre.textContent = payload.empleado || '—';
+    employeeFecha.textContent = payload.fecha ? `Fecha: ${formatFechaDisplay(payload.fecha)}` : '';
     employeeCodigo.textContent = payload.codigo ? `CODIGO: ${payload.codigo}` : '';
 
     renderSinUbicacion(payload.sinUbicacion || []);
@@ -318,7 +349,8 @@ const loadTracking = async ({ silent = false } = {}) => {
   }
 
   try {
-    const response = await fetch('/api/tracking', {
+    const fecha = getSelectedFecha();
+    const response = await fetch(`/api/tracking?fecha=${encodeURIComponent(fecha)}`, {
       headers: authHeaders(),
     });
 
@@ -403,6 +435,7 @@ loginForm.addEventListener('submit', async (event) => {
 
     saveSession(payload);
     loginForm.reset();
+    initFechaFiltro();
     showView('dashboard');
     empresaNombre.textContent = payload.empresa;
     await loadTracking({ silent: true });
@@ -421,6 +454,10 @@ loginForm.addEventListener('submit', async (event) => {
 
 refreshBtn.addEventListener('click', () => {
   loadTracking();
+});
+
+fechaFiltro.addEventListener('change', () => {
+  loadTracking({ silent: true });
 });
 
 backBtn.addEventListener('click', () => {
@@ -451,6 +488,7 @@ logoutBtn.addEventListener('click', async () => {
 });
 
 const bootstrap = async () => {
+  initFechaFiltro();
   session = getSession();
 
   if (session?.token) {
