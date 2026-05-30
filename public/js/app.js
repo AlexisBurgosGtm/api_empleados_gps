@@ -3,6 +3,7 @@ const STORAGE_KEY = 'gps_empleados_session';
 const views = {
   login: document.getElementById('view-login'),
   dashboard: document.getElementById('view-dashboard'),
+  employee: document.getElementById('view-employee'),
 };
 
 const loginForm = document.getElementById('login-form');
@@ -12,10 +13,19 @@ const empleadosCount = document.getElementById('empleados-count');
 const refreshBtn = document.getElementById('refresh-btn');
 const logoutBtn = document.getElementById('logout-btn');
 const mapLoading = document.getElementById('map-loading');
+const backBtn = document.getElementById('back-btn');
+const employeeNombre = document.getElementById('employee-nombre');
+const employeeCodigo = document.getElementById('employee-codigo');
+const sinUbicacionCount = document.getElementById('sin-ubicacion-count');
+const sinUbicacionBody = document.getElementById('sin-ubicacion-body');
+const employeeMapLoading = document.getElementById('employee-map-loading');
 
 let map = null;
+let employeeMap = null;
 let markersLayer = null;
+let employeeMarkersLayer = null;
 let session = null;
+let selectedEmployee = null;
 
 const getSession = () => {
   try {
@@ -39,6 +49,14 @@ const clearSession = () => {
 const showView = (name) => {
   Object.values(views).forEach((view) => view.classList.remove('active'));
   views[name].classList.add('active');
+
+  if (name === 'dashboard' && map) {
+    setTimeout(() => map.invalidateSize(), 100);
+  }
+
+  if (name === 'employee' && employeeMap) {
+    setTimeout(() => employeeMap.invalidateSize(), 100);
+  }
 };
 
 const authHeaders = () => ({
@@ -48,6 +66,10 @@ const authHeaders = () => ({
 
 const setLoading = (visible) => {
   mapLoading.classList.toggle('d-none', !visible);
+};
+
+const setEmployeeLoading = (visible) => {
+  employeeMapLoading.classList.toggle('d-none', !visible);
 };
 
 const escapeHtml = (value) =>
@@ -73,6 +95,19 @@ const createEmployeeIcon = (empleado, fecha, hora) =>
     iconAnchor: [0, 0],
   });
 
+const createRouteIcon = (hora) =>
+  L.divIcon({
+    className: 'route-marker',
+    html: `
+      <div class="route-marker-wrap">
+        <div class="route-marker-label">${escapeHtml(hora)}</div>
+        <div class="route-marker-pin"></div>
+      </div>
+    `,
+    iconSize: [0, 0],
+    iconAnchor: [0, 0],
+  });
+
 const initMap = () => {
   if (map) {
     return;
@@ -91,10 +126,45 @@ const initMap = () => {
   markersLayer = L.layerGroup().addTo(map);
 };
 
+const initEmployeeMap = () => {
+  if (employeeMap) {
+    return;
+  }
+
+  employeeMap = L.map('employee-map', {
+    zoomControl: true,
+    attributionControl: true,
+  }).setView([14.6349, -90.5069], 12);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap',
+  }).addTo(employeeMap);
+
+  employeeMarkersLayer = L.layerGroup().addTo(employeeMap);
+};
+
 const clearMarkers = () => {
   if (markersLayer) {
     markersLayer.clearLayers();
   }
+};
+
+const clearEmployeeMarkers = () => {
+  if (employeeMarkersLayer) {
+    employeeMarkersLayer.clearLayers();
+  }
+};
+
+const handleUnauthorized = async () => {
+  clearSession();
+  showView('login');
+  await Swal.fire({
+    icon: 'warning',
+    title: 'Sesión expirada',
+    text: 'Inicie sesión nuevamente.',
+    confirmButtonColor: '#0a0a0a',
+  });
 };
 
 const renderEmpleados = (empleados) => {
@@ -119,11 +189,9 @@ const renderEmpleados = (empleados) => {
       icon: createEmployeeIcon(item.empleado, item.fecha, item.hora),
     });
 
-    marker.bindPopup(`
-      <strong>${escapeHtml(item.empleado)}</strong><br />
-      ${escapeHtml(item.codigo)}<br />
-      ${escapeHtml(item.fecha)} · ${escapeHtml(item.hora)}
-    `);
+    marker.on('click', () => {
+      openEmployeeDetail(item);
+    });
 
     markersLayer.addLayer(marker);
   });
@@ -137,6 +205,107 @@ const renderEmpleados = (empleados) => {
   }
 
   setTimeout(() => map.invalidateSize(), 100);
+};
+
+const renderSinUbicacion = (registros) => {
+  sinUbicacionCount.textContent = `${registros.length} registro${registros.length === 1 ? '' : 's'}`;
+
+  if (!registros.length) {
+    sinUbicacionBody.innerHTML = `
+      <tr>
+        <td class="text-muted">Sin registros</td>
+      </tr>
+    `;
+    return;
+  }
+
+  sinUbicacionBody.innerHTML = registros
+    .map(
+      (item) => `
+        <tr>
+          <td>${escapeHtml(item.hora)}</td>
+        </tr>
+      `,
+    )
+    .join('');
+};
+
+const renderEmployeeRoute = (registros) => {
+  clearEmployeeMarkers();
+
+  if (!registros.length) {
+    employeeMap.setView([14.6349, -90.5069], 12);
+    return;
+  }
+
+  const bounds = [];
+
+  registros.forEach((item) => {
+    const latLng = [item.latitud, item.longitud];
+    bounds.push(latLng);
+
+    const marker = L.marker(latLng, {
+      icon: createRouteIcon(item.hora),
+    });
+
+    employeeMarkersLayer.addLayer(marker);
+  });
+
+  if (bounds.length === 1) {
+    employeeMap.setView(bounds[0], 15);
+  } else {
+    employeeMap.fitBounds(bounds, { padding: [48, 48], maxZoom: 16 });
+  }
+
+  setTimeout(() => employeeMap.invalidateSize(), 100);
+};
+
+const loadEmployeeDetail = async (codigo) => {
+  if (!session?.token) {
+    return;
+  }
+
+  setEmployeeLoading(true);
+
+  try {
+    const response = await fetch(`/api/tracking/${encodeURIComponent(codigo)}`, {
+      headers: authHeaders(),
+    });
+
+    const payload = await response.json();
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        await handleUnauthorized();
+        return;
+      }
+
+      throw new Error(payload.message || 'No se pudo cargar el detalle del empleado');
+    }
+
+    selectedEmployee = payload;
+    employeeNombre.textContent = payload.empleado || '—';
+    employeeCodigo.textContent = payload.codigo ? `CODIGO: ${payload.codigo}` : '';
+
+    renderSinUbicacion(payload.sinUbicacion || []);
+    initEmployeeMap();
+    renderEmployeeRoute(payload.conUbicacion || []);
+  } catch (error) {
+    await Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: error.message || 'Error de conexión',
+      confirmButtonColor: '#0a0a0a',
+    });
+    showView('dashboard');
+  } finally {
+    setEmployeeLoading(false);
+  }
+};
+
+const openEmployeeDetail = async (item) => {
+  showView('employee');
+  await loadEmployeeDetail(item.codigo);
 };
 
 const loadTracking = async ({ silent = false } = {}) => {
@@ -157,14 +326,7 @@ const loadTracking = async ({ silent = false } = {}) => {
 
     if (!response.ok) {
       if (response.status === 401) {
-        clearSession();
-        showView('login');
-        await Swal.fire({
-          icon: 'warning',
-          title: 'Sesión expirada',
-          text: 'Inicie sesión nuevamente.',
-          confirmButtonColor: '#0a0a0a',
-        });
+        await handleUnauthorized();
         return;
       }
 
@@ -261,6 +423,11 @@ refreshBtn.addEventListener('click', () => {
   loadTracking();
 });
 
+backBtn.addEventListener('click', () => {
+  selectedEmployee = null;
+  showView('dashboard');
+});
+
 logoutBtn.addEventListener('click', async () => {
   const result = await Swal.fire({
     title: '¿Cerrar sesión?',
@@ -278,6 +445,8 @@ logoutBtn.addEventListener('click', async () => {
 
   clearSession();
   clearMarkers();
+  clearEmployeeMarkers();
+  selectedEmployee = null;
   showView('login');
 });
 

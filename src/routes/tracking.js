@@ -81,4 +81,79 @@ const formatTime = (value) => {
   return text.length >= 5 ? text.slice(0, 5) : text;
 };
 
+router.get('/:codigo', authMiddleware, async (req, res) => {
+  const empnit = req.user.empnit;
+  const codigo = String(req.params.codigo ?? '').trim();
+
+  if (!codigo) {
+    return res.status(400).json({ message: 'Codigo de empleado requerido' });
+  }
+
+  try {
+    const pool = await getPool();
+
+    const empleadoResult = await pool
+      .request()
+      .input('empnit', sql.VarChar(50), empnit)
+      .input('codigo', sql.VarChar(50), codigo)
+      .query(`
+        SELECT CODIGO, EMPLEADO
+        FROM EMPLEADOS
+        WHERE EMPNIT = @empnit
+          AND CODIGO = @codigo
+          AND RTRIM(LTRIM(HABILITADO)) = 'SI'
+      `);
+
+    const empleado = empleadoResult.recordset[0];
+
+    if (!empleado) {
+      return res.status(404).json({ message: 'Empleado no encontrado' });
+    }
+
+    const registrosResult = await pool
+      .request()
+      .input('codigo', sql.VarChar(50), codigo)
+      .query(`
+        SELECT ID, HORA, LATITUD, LONGITUD
+        FROM EMPLEADOS_GPS
+        WHERE CODIGO = @codigo
+        ORDER BY ID
+      `);
+
+    const conUbicacion = [];
+    const sinUbicacion = [];
+
+    for (const row of registrosResult.recordset) {
+      const latitud = Number(row.LATITUD);
+      const item = {
+        id: row.ID,
+        hora: formatTime(row.HORA),
+      };
+
+      if (latitud === 0) {
+        sinUbicacion.push(item);
+        continue;
+      }
+
+      if (Number.isFinite(latitud) && Number.isFinite(Number(row.LONGITUD))) {
+        conUbicacion.push({
+          ...item,
+          latitud,
+          longitud: Number(row.LONGITUD),
+        });
+      }
+    }
+
+    return res.json({
+      codigo: empleado.CODIGO,
+      empleado: empleado.EMPLEADO,
+      conUbicacion,
+      sinUbicacion,
+    });
+  } catch (error) {
+    console.error('Error en historial:', error);
+    return res.status(500).json({ message: 'Error al obtener historial del empleado' });
+  }
+});
+
 module.exports = router;

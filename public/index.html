@@ -95,6 +95,59 @@
         </div>
       </main>
     </section>
+
+    <!-- Detalle empleado -->
+    <section id="view-employee" class="view">
+      <header class="dashboard-header">
+        <div class="header-left">
+          <button type="button" class="btn btn-outline-light btn-sm" id="back-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+              <path fill-rule="evenodd" d="M15 8a.5.5 0 0 1-.5.5H2.707l3.147 3.146a.5.5 0 0 1-.708.708l-4-4a.5.5 0 0 1 0-.708l4-4a.5.5 0 0 1 .708.708L2.707 7.5H14.5a.5.5 0 0 1 .5.5"/>
+            </svg>
+            Volver
+          </button>
+          <div class="employee-title-wrap">
+            <span class="header-badge">Empleado</span>
+            <h2 id="employee-nombre" class="header-title">—</h2>
+          </div>
+        </div>
+        <div class="header-actions">
+          <span id="employee-codigo" class="header-meta"></span>
+        </div>
+      </header>
+      <main class="employee-main">
+        <div class="employee-panel employee-panel-left">
+          <div class="detail-card">
+            <div class="detail-card-header">
+              <h3>Sin ubicación</h3>
+              <span id="sin-ubicacion-count" class="detail-count">0 registros</span>
+            </div>
+            <div class="detail-table-wrap">
+              <table class="table table-dark table-sm detail-table mb-0">
+                <thead>
+                  <tr>
+                    <th>Hora</th>
+                  </tr>
+                </thead>
+                <tbody id="sin-ubicacion-body">
+                  <tr>
+                    <td class="text-muted">Sin registros</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="employee-panel employee-panel-right">
+          <div id="employee-map"></div>
+          <div id="employee-map-loading" class="map-loading d-none">
+            <div class="spinner-border text-light" role="status">
+              <span class="visually-hidden">Cargando...</span>
+            </div>
+          </div>
+        </div>
+      </main>
+    </section>
   </div>
 
   <script
