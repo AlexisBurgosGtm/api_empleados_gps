@@ -24,7 +24,7 @@ router.post('/login', async (req, res) => {
       .input('empnit', sql.VarChar(50), empnit)
       .input('clave', sql.VarChar(250), clave)
       .query(`
-        SELECT EMPNIT, EMPRESA
+        SELECT EMPNIT, EMPRESA, TIPO
         FROM EMPRESAS
         WHERE RTRIM(LTRIM(EMPNIT)) = @empnit
           AND RTRIM(LTRIM(CLAVE)) = @clave
@@ -38,7 +38,11 @@ router.post('/login', async (req, res) => {
     }
 
     const token = jwt.sign(
-      { empnit: empresa.EMPNIT.trim(), empresa: empresa.EMPRESA.trim() },
+      {
+        empnit: empresa.EMPNIT.trim(),
+        empresa: empresa.EMPRESA.trim(),
+        tipo: String(empresa.TIPO ?? 'CLIENTE').trim().toUpperCase(),
+      },
       process.env.JWT_SECRET,
       { expiresIn: '12h' },
     );
@@ -47,6 +51,7 @@ router.post('/login', async (req, res) => {
       token,
       empnit: empresa.EMPNIT,
       empresa: empresa.EMPRESA,
+      tipo: String(empresa.TIPO ?? 'CLIENTE').trim().toUpperCase(),
     });
   } catch (error) {
     console.error('Error en login:', error);

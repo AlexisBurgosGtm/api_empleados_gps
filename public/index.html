@@ -3,12 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GPS Empleados</title>
+  <title>SALES TRACK</title>
   <link
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
     rel="stylesheet"
     integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
     crossorigin="anonymous"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsbqTkldfzh3qN/YkHz40GK2Y4vNXDv3+9Gi9sDqQ=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
   />
   <link
     rel="stylesheet"
@@ -20,17 +27,14 @@
 </head>
 <body>
   <div id="app">
-    <!-- Login -->
     <section id="view-login" class="view active">
       <div class="login-shell">
         <div class="login-card shadow-lg">
           <div class="login-brand">
             <div class="brand-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10m0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6"/>
-              </svg>
+              <i class="fa-solid fa-location-dot"></i>
             </div>
-            <h1 class="login-title">GPS Empleados</h1>
+            <h1 class="login-title">SALES TRACK</h1>
             <p class="login-subtitle">Seguimiento en tiempo real</p>
           </div>
 
@@ -67,90 +71,191 @@
       </div>
     </section>
 
-    <!-- Dashboard -->
-    <section id="view-dashboard" class="view">
-      <header class="dashboard-header">
-        <div class="header-left">
-          <span class="header-badge">Empresa</span>
-          <h2 id="empresa-nombre" class="header-title">—</h2>
+    <section id="view-root" class="view">
+      <aside id="root-sidebar" class="root-sidebar hidden">
+        <div class="root-brand">
+          <i class="fa-solid fa-location-dot"></i>
+          <span>SALES TRACK</span>
         </div>
-        <div class="header-actions">
-          <label class="date-filter-label" for="fecha-filtro">Fecha</label>
-          <input type="date" id="fecha-filtro" class="form-control form-control-sm date-filter" />
-          <span id="empleados-count" class="header-meta">0 empleados</span>
-          <button type="button" class="btn btn-outline-light btn-sm" id="refresh-btn">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1">
-              <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
-              <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
-            </svg>
-            Refrescar
+        <nav class="root-nav">
+          <button type="button" class="root-nav-btn active" data-panel="mapa">
+            <i class="fa-solid fa-map"></i>
+            <span>MAPA</span>
           </button>
-          <button type="button" class="btn btn-light btn-sm" id="logout-btn">Salir</button>
-        </div>
-      </header>
-      <main class="dashboard-main">
-        <div id="map"></div>
-        <div id="map-loading" class="map-loading d-none">
-          <div class="spinner-border text-light" role="status">
-            <span class="visually-hidden">Cargando...</span>
-          </div>
-        </div>
-      </main>
-    </section>
+          <button type="button" class="root-nav-btn" data-panel="empresas">
+            <i class="fa-solid fa-building"></i>
+            <span>EMPRESAS</span>
+          </button>
+        </nav>
+        <button type="button" class="root-logout-btn" id="root-logout-btn">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          <span>Salir</span>
+        </button>
+      </aside>
 
-    <!-- Detalle empleado -->
-    <section id="view-employee" class="view">
-      <header class="dashboard-header">
-        <div class="header-left">
-          <button type="button" class="btn btn-outline-light btn-sm" id="back-btn">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1">
-              <path fill-rule="evenodd" d="M15 8a.5.5 0 0 1-.5.5H2.707l3.147 3.146a.5.5 0 0 1-.708.708l-4-4a.5.5 0 0 1 0-.708l4-4a.5.5 0 0 1 .708.708L2.707 7.5H14.5a.5.5 0 0 1 .5.5"/>
-            </svg>
-            Volver
-          </button>
-          <div class="employee-title-wrap">
-            <span class="header-badge">Empleado</span>
-            <h2 id="employee-nombre" class="header-title">—</h2>
-          </div>
-        </div>
-        <div class="header-actions">
-          <span id="employee-fecha" class="header-meta"></span>
-          <span id="employee-codigo" class="header-meta"></span>
-        </div>
-      </header>
-      <main class="employee-main">
-        <div class="employee-panel employee-panel-left">
-          <div class="detail-card">
-            <div class="detail-card-header">
-              <h3>Sin ubicación</h3>
-              <span id="sin-ubicacion-count" class="detail-count">0 registros</span>
+      <div class="root-main">
+        <section id="view-dashboard" class="root-panel active">
+          <header class="dashboard-header">
+            <div class="header-left">
+              <span class="header-badge">Empresa</span>
+              <h2 id="empresa-nombre" class="header-title">—</h2>
             </div>
-            <div class="detail-table-wrap">
-              <table class="table table-dark table-sm detail-table mb-0">
+            <div class="header-actions">
+              <label class="date-filter-label" for="fecha-filtro">Fecha</label>
+              <input type="date" id="fecha-filtro" class="form-control form-control-sm date-filter" />
+              <span id="empleados-count" class="header-meta">0 empleados</span>
+              <button type="button" class="btn btn-outline-light btn-sm" id="refresh-btn">
+                <i class="fa-solid fa-rotate"></i>
+                Refrescar
+              </button>
+              <button type="button" class="btn btn-light btn-sm client-logout-btn" id="logout-btn">
+                Salir
+              </button>
+            </div>
+          </header>
+          <main class="dashboard-main">
+            <div id="map"></div>
+            <div id="map-loading" class="map-loading d-none">
+              <div class="spinner-border text-light" role="status">
+                <span class="visually-hidden">Cargando...</span>
+              </div>
+            </div>
+          </main>
+        </section>
+
+        <section id="view-employee" class="root-panel">
+          <header class="dashboard-header">
+            <div class="header-left">
+              <button type="button" class="btn btn-outline-light btn-sm" id="back-btn">
+                <i class="fa-solid fa-arrow-left"></i>
+                Volver
+              </button>
+              <div class="employee-title-wrap">
+                <span class="header-badge">Empleado</span>
+                <h2 id="employee-nombre" class="header-title">—</h2>
+              </div>
+            </div>
+            <div class="header-actions">
+              <span id="employee-fecha" class="header-meta"></span>
+              <span id="employee-codigo" class="header-meta"></span>
+            </div>
+          </header>
+          <main class="employee-main">
+            <div class="employee-panel employee-panel-left">
+              <div class="detail-card">
+                <div class="detail-card-header">
+                  <h3>Sin ubicación</h3>
+                  <span id="sin-ubicacion-count" class="detail-count">0 registros</span>
+                </div>
+                <div class="detail-table-wrap">
+                  <table class="table table-dark table-sm detail-table mb-0">
+                    <thead>
+                      <tr>
+                        <th>Hora</th>
+                      </tr>
+                    </thead>
+                    <tbody id="sin-ubicacion-body">
+                      <tr>
+                        <td class="text-muted">Sin registros</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="employee-panel employee-panel-right">
+              <div id="employee-map"></div>
+              <div id="employee-map-loading" class="map-loading d-none">
+                <div class="spinner-border text-light" role="status">
+                  <span class="visually-hidden">Cargando...</span>
+                </div>
+              </div>
+            </div>
+          </main>
+        </section>
+
+        <section id="view-empresas" class="root-panel">
+          <header class="dashboard-header">
+            <div class="header-left">
+              <span class="header-badge">Administración</span>
+              <h2 class="header-title">Empresas</h2>
+            </div>
+            <div class="header-actions">
+              <button type="button" class="btn btn-light btn-sm" id="empresa-new-btn">
+                <i class="fa-solid fa-plus"></i>
+                Nueva empresa
+              </button>
+            </div>
+          </header>
+          <main class="empresas-main">
+            <div class="empresas-table-wrap">
+              <table class="table table-dark empresas-table mb-0">
                 <thead>
                   <tr>
-                    <th>Hora</th>
+                    <th>EMPNIT</th>
+                    <th>Empresa</th>
+                    <th>Tipo</th>
+                    <th>Clave</th>
+                    <th>Habilitado</th>
+                    <th>Acciones</th>
                   </tr>
                 </thead>
-                <tbody id="sin-ubicacion-body">
+                <tbody id="empresas-body">
                   <tr>
-                    <td class="text-muted">Sin registros</td>
+                    <td colspan="6" class="text-muted text-center">Cargando...</td>
                   </tr>
                 </tbody>
               </table>
             </div>
-          </div>
+          </main>
+        </section>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal fade" id="empresa-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content empresa-modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="empresa-modal-title">Nueva empresa</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
-        <div class="employee-panel employee-panel-right">
-          <div id="employee-map"></div>
-          <div id="employee-map-loading" class="map-loading d-none">
-            <div class="spinner-border text-light" role="status">
-              <span class="visually-hidden">Cargando...</span>
+        <form id="empresa-form">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="empresa-empnit" class="form-label">EMPNIT</label>
+              <input type="text" class="form-control" id="empresa-empnit" required />
+            </div>
+            <div class="mb-3">
+              <label for="empresa-nombre-input" class="form-label">Empresa</label>
+              <input type="text" class="form-control" id="empresa-nombre-input" required />
+            </div>
+            <div class="mb-3">
+              <label for="empresa-clave" class="form-label">Clave</label>
+              <input type="text" class="form-control" id="empresa-clave" required />
+            </div>
+            <div class="mb-3">
+              <label for="empresa-tipo" class="form-label">Tipo</label>
+              <select class="form-select" id="empresa-tipo">
+                <option value="CLIENTE">CLIENTE</option>
+                <option value="ROOT">ROOT</option>
+              </select>
+            </div>
+            <div class="mb-0">
+              <label for="empresa-habilitado" class="form-label">Habilitado</label>
+              <select class="form-select" id="empresa-habilitado">
+                <option value="SI">SI</option>
+                <option value="NO">NO</option>
+              </select>
             </div>
           </div>
-        </div>
-      </main>
-    </section>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-light">Guardar</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 
   <script
@@ -164,6 +269,8 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""
   ></script>
+  <script src="/js/root.js"></script>
+  <script src="/js/Empresas.js"></script>
   <script src="/js/app.js"></script>
 </body>
 </html>

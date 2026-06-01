@@ -6,6 +6,7 @@ const path = require('path');
 const authRoutes = require('./routes/auth');
 const trackingRoutes = require('./routes/tracking');
 const gpsRoutes = require('./routes/gps');
+const empresasRoutes = require('./routes/empresas');
 const { getPool } = require('./db');
 
 const app = express();
@@ -17,6 +18,7 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use('/api/auth', authRoutes);
 app.use('/api/tracking', trackingRoutes);
 app.use('/api/gps', gpsRoutes);
+app.use('/api/empresas', empresasRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true });

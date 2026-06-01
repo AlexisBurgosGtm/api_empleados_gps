@@ -2,8 +2,7 @@ const STORAGE_KEY = 'gps_empleados_session';
 
 const views = {
   login: document.getElementById('view-login'),
-  dashboard: document.getElementById('view-dashboard'),
-  employee: document.getElementById('view-employee'),
+  root: document.getElementById('view-root'),
 };
 
 const loginForm = document.getElementById('login-form');
@@ -74,14 +73,23 @@ const clearSession = () => {
 
 const showView = (name) => {
   Object.values(views).forEach((view) => view.classList.remove('active'));
-  views[name].classList.add('active');
+  views[name]?.classList.add('active');
+};
 
-  if (name === 'dashboard' && map) {
-    setTimeout(() => map.invalidateSize(), 100);
+const showDashboard = () => {
+  window.RootView?.showPanel('mapa');
+};
+
+const showEmployee = () => {
+  window.RootView?.showPanel('employee');
+};
+
+const invalidateMap = () => {
+  if (map) {
+    map.invalidateSize();
   }
-
-  if (name === 'employee' && employeeMap) {
-    setTimeout(() => employeeMap.invalidateSize(), 100);
+  if (employeeMap) {
+    employeeMap.invalidateSize();
   }
 };
 
@@ -328,15 +336,23 @@ const loadEmployeeDetail = async (codigo) => {
       text: error.message || 'Error de conexión',
       confirmButtonColor: '#0a0a0a',
     });
-    showView('dashboard');
+    showView('login');
   } finally {
     setEmployeeLoading(false);
   }
 };
 
 const openEmployeeDetail = async (item) => {
-  showView('employee');
+  showEmployee();
   await loadEmployeeDetail(item.codigo);
+};
+
+const enterAuthenticatedApp = async (payload) => {
+  initFechaFiltro();
+  window.RootView?.enter(payload.tipo ?? 'CLIENTE');
+  showView('root');
+  empresaNombre.textContent = payload.empresa;
+  await loadTracking({ silent: true });
 };
 
 const loadTracking = async ({ silent = false } = {}) => {
@@ -435,10 +451,7 @@ loginForm.addEventListener('submit', async (event) => {
 
     saveSession(payload);
     loginForm.reset();
-    initFechaFiltro();
-    showView('dashboard');
-    empresaNombre.textContent = payload.empresa;
-    await loadTracking({ silent: true });
+    await enterAuthenticatedApp(payload);
   } catch (error) {
     await Swal.fire({
       icon: 'error',
@@ -462,10 +475,10 @@ fechaFiltro.addEventListener('change', () => {
 
 backBtn.addEventListener('click', () => {
   selectedEmployee = null;
-  showView('dashboard');
+  showDashboard();
 });
 
-logoutBtn.addEventListener('click', async () => {
+const handleLogout = async () => {
   const result = await Swal.fire({
     title: '¿Cerrar sesión?',
     icon: 'question',
@@ -484,20 +497,30 @@ logoutBtn.addEventListener('click', async () => {
   clearMarkers();
   clearEmployeeMarkers();
   selectedEmployee = null;
+  window.RootView?.setRootMode(false);
   showView('login');
+};
+
+logoutBtn.addEventListener('click', () => {
+  void handleLogout();
 });
 
 const bootstrap = async () => {
   initFechaFiltro();
+  window.RootView?.init({ onLogout: handleLogout });
+  window.EmpresasView?.init();
   session = getSession();
 
   if (session?.token) {
-    showView('dashboard');
-    empresaNombre.textContent = session.empresa || '—';
-    await loadTracking({ silent: true });
+    await enterAuthenticatedApp(session);
   } else {
     showView('login');
   }
+};
+
+window.AppShell = {
+  authHeaders,
+  invalidateMap,
 };
 
 bootstrap();
