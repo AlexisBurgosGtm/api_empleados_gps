@@ -107,7 +107,11 @@ router.post('/', authMiddleware, rootOnly, async (req, res) => {
     return res.status(201).json({ message: 'Empresa creada' });
   } catch (error) {
     console.error('Error creando empresa:', error);
-    return res.status(500).json({ message: 'Error al crear empresa' });
+    const message =
+      error?.number === 2627 || error?.number === 2601
+        ? 'Ya existe una empresa con ese EMPNIT'
+        : 'Error al crear empresa';
+    return res.status(500).json({ message });
   }
 });
 
@@ -210,7 +214,11 @@ router.delete('/:empnit', authMiddleware, rootOnly, async (req, res) => {
     return res.json({ message: 'Empresa eliminada' });
   } catch (error) {
     console.error('Error eliminando empresa:', error);
-    return res.status(500).json({ message: 'Error al eliminar empresa' });
+    const message =
+      error?.number === 547
+        ? 'No se puede eliminar: la empresa tiene registros relacionados'
+        : 'Error al eliminar empresa';
+    return res.status(500).json({ message });
   }
 });
 

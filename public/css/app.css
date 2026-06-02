@@ -138,96 +138,53 @@ body {
 #view-root.active {
   height: 100vh;
   display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
-.root-sidebar {
-  width: 240px;
-  min-width: 240px;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
+.root-navbar {
   background: var(--bg-card);
-  border-right: 1px solid var(--border);
-  padding: 20px 16px;
+  border-bottom: 1px solid var(--border);
+  min-height: var(--header-height);
 }
 
-.root-sidebar.hidden {
-  display: none;
+.root-navbar.hidden {
+  display: none !important;
 }
 
-.root-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.root-navbar .navbar-brand {
   color: var(--text-primary);
   font-weight: 700;
   font-size: 1rem;
-  margin-bottom: 28px;
-  padding: 0 8px;
 }
 
-.root-brand i {
-  font-size: 1.1rem;
-}
-
-.root-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 1;
-}
-
-.root-nav-btn,
-.root-logout-btn {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  border: 1px solid transparent;
+.root-navbar .nav-link.root-nav-btn {
+  border: none;
   background: transparent;
   color: var(--text-secondary);
-  border-radius: 12px;
-  padding: 14px 16px;
-  text-align: left;
-  font-size: 0.92rem;
   font-weight: 600;
   letter-spacing: 0.04em;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
 }
 
-.root-nav-btn i,
-.root-logout-btn i {
-  width: 18px;
-  text-align: center;
-}
-
-.root-nav-btn:hover,
-.root-logout-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
+.root-navbar .nav-link.root-nav-btn:hover,
+.root-navbar .nav-link.root-nav-btn.active {
   color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.08);
 }
 
-.root-nav-btn.active {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: var(--border);
-  color: var(--text-primary);
-}
-
-.root-logout-btn {
-  margin-top: auto;
-  border-color: var(--border);
-}
-
-.root-main {
+.root-body {
   flex: 1;
-  min-width: 0;
-  position: relative;
-  height: 100vh;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .root-panel {
   display: none;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   flex-direction: column;
 }
 
@@ -309,6 +266,14 @@ body {
   border: 1px solid var(--border);
 }
 
+.modal {
+  z-index: 2000;
+}
+
+.modal-backdrop {
+  z-index: 1990;
+}
+
 .empresa-modal-content .form-control,
 .empresa-modal-content .form-select {
   background: var(--bg-elevated);
@@ -325,8 +290,8 @@ body {
 }
 
 /* Dashboard */
-#view-dashboard.active {
-  height: 100vh;
+.root-panel#view-dashboard.active,
+.root-panel#view-employee.active {
   overflow: hidden;
 }
 
@@ -436,8 +401,9 @@ body {
 
 /* Map markers */
 .employee-marker {
-  background: transparent;
-  border: none;
+  background: transparent !important;
+  border: none !important;
+  pointer-events: auto !important;
 }
 
 .employee-marker-wrap {
@@ -445,6 +411,8 @@ body {
   flex-direction: column;
   align-items: center;
   transform: translate(-50%, -100%);
+  cursor: pointer;
+  pointer-events: auto;
 }
 
 .employee-label {
@@ -494,8 +462,7 @@ body {
 }
 
 /* Employee detail */
-#view-employee.active {
-  height: 100%;
+.root-panel#view-employee.active {
   overflow: hidden;
 }
 

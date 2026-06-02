@@ -12,6 +12,7 @@ const EmpresasView = (() => {
 
   let modal = null;
   let editingEmpnit = null;
+  let empresasCache = [];
 
   const escapeHtml = (value) =>
     String(value ?? '')
@@ -20,11 +21,30 @@ const EmpresasView = (() => {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
 
-  const authHeaders = () => window.AppShell.authHeaders();
+  const authHeaders = () => {
+    if (typeof window.AppShell?.authHeaders === 'function') {
+      return window.AppShell.authHeaders();
+    }
+
+    return { 'Content-Type': 'application/json' };
+  };
+
+  const parseResponse = async (response) => {
+    const text = await response.text();
+    if (!text.trim()) {
+      return {};
+    }
+
+    try {
+      return JSON.parse(text);
+    } catch {
+      throw new Error('Respuesta invalida del servidor');
+    }
+  };
 
   const getModal = () => {
-    if (!modal) {
-      modal = new bootstrap.Modal(modalElement);
+    if (!modal && modalElement) {
+      modal = bootstrap.Modal.getOrCreateInstance(modalElement);
     }
 
     return modal;
@@ -58,10 +78,10 @@ const EmpresasView = (() => {
               </button>
             </td>
             <td class="empresas-actions">
-              <button type="button" class="btn btn-sm btn-outline-light edit-btn" data-empnit="${escapeHtml(item.empnit)}">
+              <button type="button" class="btn btn-sm btn-outline-light edit-btn" data-empnit="${escapeHtml(item.empnit)}" title="Editar">
                 <i class="fa-solid fa-pen"></i>
               </button>
-              <button type="button" class="btn btn-sm btn-outline-danger delete-btn" data-empnit="${escapeHtml(item.empnit)}">
+              <button type="button" class="btn btn-sm btn-outline-danger delete-btn" data-empnit="${escapeHtml(item.empnit)}" title="Eliminar">
                 <i class="fa-solid fa-trash"></i>
               </button>
             </td>
@@ -72,15 +92,30 @@ const EmpresasView = (() => {
   };
 
   const load = async () => {
+    empresasBody.innerHTML = `
+      <tr>
+        <td colspan="6" class="text-muted text-center">Cargando...</td>
+      </tr>
+    `;
+
     try {
       const response = await fetch('/api/empresas', { headers: authHeaders() });
-      const payload = await response.json();
+      const payload = await parseResponse(response);
+
+      if (response.status === 401) {
+        throw new Error('Sesion expirada. Inicie sesion nuevamente.');
+      }
+
+      if (response.status === 403) {
+        throw new Error('Acceso denegado. Inicie sesion con un usuario ROOT.');
+      }
 
       if (!response.ok) {
         throw new Error(payload.message || 'No se pudieron cargar las empresas');
       }
 
-      renderRows(payload.empresas || []);
+      empresasCache = payload.empresas || [];
+      renderRows(empresasCache);
     } catch (error) {
       empresasBody.innerHTML = `
         <tr>
@@ -99,14 +134,11 @@ const EmpresasView = (() => {
     claveInput.value = empresa?.clave ?? '';
     tipoInput.value = empresa?.tipo ?? 'CLIENTE';
     habilitadoInput.value = empresa?.habilitado ?? 'SI';
-    getModal().show();
+    getModal()?.show();
   };
 
-  const findEmpresa = async (empnit) => {
-    const response = await fetch('/api/empresas', { headers: authHeaders() });
-    const payload = await response.json();
-    return (payload.empresas || []).find((item) => item.empnit === empnit) ?? null;
-  };
+  const findEmpresa = (empnit) =>
+    empresasCache.find((item) => String(item.empnit).trim() === String(empnit).trim()) ?? null;
 
   const save = async (event) => {
     event.preventDefault();
@@ -119,6 +151,16 @@ const EmpresasView = (() => {
       habilitado: habilitadoInput.value,
     };
 
+    if (!body.empnit || !body.empresa || !body.clave) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Campos requeridos',
+        text: 'Complete EMPNIT, empresa y clave.',
+        confirmButtonColor: '#0a0a0a',
+      });
+      return;
+    }
+
     const url = editingEmpnit ? `/api/empresas/${encodeURIComponent(editingEmpnit)}` : '/api/empresas';
     const method = editingEmpnit ? 'PUT' : 'POST';
 
@@ -128,19 +170,20 @@ const EmpresasView = (() => {
         headers: authHeaders(),
         body: JSON.stringify(body),
       });
-      const payload = await response.json();
+      const payload = await parseResponse(response);
 
       if (!response.ok) {
         throw new Error(payload.message || 'No se pudo guardar la empresa');
       }
 
-      getModal().hide();
+      getModal()?.hide();
+      editingEmpnit = null;
       await load();
       await Swal.fire({
         toast: true,
         position: 'top-end',
         icon: 'success',
-        title: editingEmpnit ? 'Empresa actualizada' : 'Empresa creada',
+        title: method === 'POST' ? 'Empresa creada' : 'Empresa actualizada',
         showConfirmButton: false,
         timer: 1800,
       });
@@ -160,7 +203,7 @@ const EmpresasView = (() => {
         method: 'PATCH',
         headers: authHeaders(),
       });
-      const payload = await response.json();
+      const payload = await parseResponse(response);
 
       if (!response.ok) {
         throw new Error(payload.message || 'No se pudo cambiar el estado');
@@ -198,13 +241,21 @@ const EmpresasView = (() => {
         method: 'DELETE',
         headers: authHeaders(),
       });
-      const payload = await response.json();
+      const payload = await parseResponse(response);
 
       if (!response.ok) {
         throw new Error(payload.message || 'No se pudo eliminar la empresa');
       }
 
       await load();
+      await Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Empresa eliminada',
+        showConfirmButton: false,
+        timer: 1800,
+      });
     } catch (error) {
       await Swal.fire({
         icon: 'error',
@@ -215,40 +266,39 @@ const EmpresasView = (() => {
     }
   };
 
+  const handleTableClick = (event) => {
+    const toggleBtn = event.target.closest('.habilitado-toggle');
+    if (toggleBtn?.dataset.empnit) {
+      void toggleHabilitado(toggleBtn.dataset.empnit);
+      return;
+    }
+
+    const editBtn = event.target.closest('.edit-btn');
+    if (editBtn?.dataset.empnit) {
+      const empresa = findEmpresa(editBtn.dataset.empnit);
+      if (empresa) {
+        openModal(empresa);
+      }
+      return;
+    }
+
+    const deleteBtn = event.target.closest('.delete-btn');
+    if (deleteBtn?.dataset.empnit) {
+      void remove(deleteBtn.dataset.empnit);
+    }
+  };
+
   const init = () => {
     newBtn?.addEventListener('click', () => openModal());
     form?.addEventListener('submit', (event) => {
       void save(event);
     });
+    empresasBody?.addEventListener('click', handleTableClick);
 
-    empresasBody?.addEventListener('click', (event) => {
-      const target = event.target.closest('button');
-      if (!target) {
-        return;
-      }
-
-      const empnit = target.dataset.empnit;
-      if (!empnit) {
-        return;
-      }
-
-      if (target.classList.contains('habilitado-toggle')) {
-        void toggleHabilitado(empnit);
-        return;
-      }
-
-      if (target.classList.contains('edit-btn')) {
-        void findEmpresa(empnit).then((empresa) => {
-          if (empresa) {
-            openModal(empresa);
-          }
-        });
-        return;
-      }
-
-      if (target.classList.contains('delete-btn')) {
-        void remove(empnit);
-      }
+    modalElement?.addEventListener('hidden.bs.modal', () => {
+      editingEmpnit = null;
+      empnitInput.disabled = false;
+      form?.reset();
     });
   };
 

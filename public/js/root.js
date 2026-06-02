@@ -1,5 +1,6 @@
 const RootView = (() => {
-  const sidebar = document.getElementById('root-sidebar');
+  const navbar = document.getElementById('root-navbar');
+  const navCollapse = document.getElementById('rootNavCollapse');
   const navButtons = Array.from(document.querySelectorAll('.root-nav-btn'));
   const panels = {
     mapa: document.getElementById('view-dashboard'),
@@ -8,9 +9,17 @@ const RootView = (() => {
   const employeePanel = document.getElementById('view-employee');
   const rootLogoutBtn = document.getElementById('root-logout-btn');
 
+  const collapseNav = () => {
+    if (!navCollapse?.classList.contains('show')) {
+      return;
+    }
+
+    bootstrap.Collapse.getOrCreateInstance(navCollapse).hide();
+  };
+
   const setRootMode = (enabled) => {
     document.body.classList.toggle('root-mode', enabled);
-    sidebar.classList.toggle('hidden', !enabled);
+    navbar?.classList.toggle('hidden', !enabled);
     document.querySelectorAll('.client-logout-btn').forEach((button) => {
       button.classList.toggle('hidden', enabled);
     });
@@ -22,6 +31,7 @@ const RootView = (() => {
 
     if (name === 'employee') {
       employeePanel?.classList.add('active');
+      setTimeout(() => window.AppShell?.invalidateMap(), 150);
       return;
     }
 
@@ -35,8 +45,8 @@ const RootView = (() => {
       window.EmpresasView.load();
     }
 
-    if (name === 'mapa' && window.AppShell?.invalidateMap) {
-      setTimeout(() => window.AppShell.invalidateMap(), 100);
+    if (name === 'mapa') {
+      setTimeout(() => window.AppShell?.invalidateMap(), 150);
     }
   };
 
@@ -44,6 +54,7 @@ const RootView = (() => {
     navButtons.forEach((button) => {
       button.addEventListener('click', () => {
         showPanel(button.dataset.panel);
+        collapseNav();
       });
     });
 

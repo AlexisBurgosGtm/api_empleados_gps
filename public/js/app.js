@@ -61,9 +61,40 @@ const getSession = () => {
   }
 };
 
+const decodeTokenPayload = (token) => {
+  try {
+    const encoded = token.split('.')[1];
+    if (!encoded) {
+      return null;
+    }
+
+    return JSON.parse(atob(encoded.replace(/-/g, '+').replace(/_/g, '/')));
+  } catch {
+    return null;
+  }
+};
+
+const normalizeSession = (data) => {
+  if (!data?.token) {
+    return data;
+  }
+
+  const payload = decodeTokenPayload(data.token);
+  const tipo = String(data.tipo ?? payload?.tipo ?? 'CLIENTE')
+    .trim()
+    .toUpperCase();
+
+  return {
+    ...data,
+    empnit: data.empnit ?? payload?.empnit ?? '',
+    empresa: data.empresa ?? payload?.empresa ?? '',
+    tipo: tipo === 'ROOT' ? 'ROOT' : 'CLIENTE',
+  };
+};
+
 const saveSession = (data) => {
-  session = data;
-  sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  session = normalizeSession(data);
+  sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));
 };
 
 const clearSession = () => {
@@ -93,10 +124,16 @@ const invalidateMap = () => {
   }
 };
 
-const authHeaders = () => ({
-  Authorization: `Bearer ${session.token}`,
-  'Content-Type': 'application/json',
-});
+const authHeaders = () => {
+  if (!session?.token) {
+    return { 'Content-Type': 'application/json' };
+  }
+
+  return {
+    Authorization: `Bearer ${session.token}`,
+    'Content-Type': 'application/json',
+  };
+};
 
 const setLoading = (visible) => {
   mapLoading.classList.toggle('d-none', !visible);
@@ -125,8 +162,8 @@ const createEmployeeIcon = (empleado, fecha, hora) =>
         <div class="employee-pin"></div>
       </div>
     `,
-    iconSize: [0, 0],
-    iconAnchor: [0, 0],
+    iconSize: [180, 56],
+    iconAnchor: [90, 56],
   });
 
 const createRouteIcon = (hora) =>
@@ -144,6 +181,7 @@ const createRouteIcon = (hora) =>
 
 const initMap = () => {
   if (map) {
+    setTimeout(() => map.invalidateSize(), 150);
     return;
   }
 
@@ -221,10 +259,11 @@ const renderEmpleados = (empleados) => {
 
     const marker = L.marker(latLng, {
       icon: createEmployeeIcon(item.empleado, item.fecha, item.hora),
+      interactive: true,
     });
 
     marker.on('click', () => {
-      openEmployeeDetail(item);
+      void openEmployeeDetail(item);
     });
 
     markersLayer.addLayer(marker);
@@ -336,7 +375,7 @@ const loadEmployeeDetail = async (codigo) => {
       text: error.message || 'Error de conexión',
       confirmButtonColor: '#0a0a0a',
     });
-    showView('login');
+    showDashboard();
   } finally {
     setEmployeeLoading(false);
   }
@@ -353,6 +392,7 @@ const enterAuthenticatedApp = async (payload) => {
   showView('root');
   empresaNombre.textContent = payload.empresa;
   await loadTracking({ silent: true });
+  setTimeout(() => invalidateMap(), 200);
 };
 
 const loadTracking = async ({ silent = false } = {}) => {
@@ -505,22 +545,23 @@ logoutBtn.addEventListener('click', () => {
   void handleLogout();
 });
 
+window.AppShell = {
+  authHeaders,
+  invalidateMap,
+};
+
 const bootstrap = async () => {
   initFechaFiltro();
   window.RootView?.init({ onLogout: handleLogout });
   window.EmpresasView?.init();
-  session = getSession();
+  session = normalizeSession(getSession());
 
   if (session?.token) {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));
     await enterAuthenticatedApp(session);
   } else {
     showView('login');
   }
-};
-
-window.AppShell = {
-  authHeaders,
-  invalidateMap,
 };
 
 bootstrap();

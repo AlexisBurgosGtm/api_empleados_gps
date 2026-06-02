@@ -72,28 +72,43 @@
     </section>
 
     <section id="view-root" class="view">
-      <aside id="root-sidebar" class="root-sidebar hidden">
-        <div class="root-brand">
-          <i class="fa-solid fa-location-dot"></i>
-          <span>SALES TRACK</span>
+      <nav id="root-navbar" class="navbar navbar-expand-lg navbar-dark root-navbar hidden">
+        <div class="container-fluid">
+          <span class="navbar-brand mb-0">
+            <i class="fa-solid fa-location-dot me-2"></i>SALES TRACK
+          </span>
+          <button
+            class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#rootNavCollapse"
+            aria-controls="rootNavCollapse"
+            aria-expanded="false"
+            aria-label="Alternar navegacion"
+          >
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="rootNavCollapse">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+              <li class="nav-item">
+                <button type="button" class="nav-link root-nav-btn active" data-panel="mapa">
+                  <i class="fa-solid fa-map me-2"></i>MAPA
+                </button>
+              </li>
+              <li class="nav-item">
+                <button type="button" class="nav-link root-nav-btn" data-panel="empresas">
+                  <i class="fa-solid fa-building me-2"></i>EMPRESAS
+                </button>
+              </li>
+            </ul>
+            <button type="button" class="btn btn-outline-light btn-sm" id="root-logout-btn">
+              <i class="fa-solid fa-right-from-bracket me-1"></i>Salir
+            </button>
+          </div>
         </div>
-        <nav class="root-nav">
-          <button type="button" class="root-nav-btn active" data-panel="mapa">
-            <i class="fa-solid fa-map"></i>
-            <span>MAPA</span>
-          </button>
-          <button type="button" class="root-nav-btn" data-panel="empresas">
-            <i class="fa-solid fa-building"></i>
-            <span>EMPRESAS</span>
-          </button>
-        </nav>
-        <button type="button" class="root-logout-btn" id="root-logout-btn">
-          <i class="fa-solid fa-right-from-bracket"></i>
-          <span>Salir</span>
-        </button>
-      </aside>
+      </nav>
 
-      <div class="root-main">
+      <div class="root-body">
         <section id="view-dashboard" class="root-panel active">
           <header class="dashboard-header">
             <div class="header-left">
