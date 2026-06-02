@@ -120,6 +120,7 @@ router.put('/:empnit', authMiddleware, rootOnly, async (req, res) => {
   const empresa = String(req.body?.empresa ?? '').trim();
   const clave = String(req.body?.clave ?? '').trim();
   const tipo = normalizeTipo(req.body?.tipo);
+  const hasHabilitado = req.body?.habilitado !== undefined && req.body?.habilitado !== null;
   const habilitado = normalizeHabilitado(req.body?.habilitado);
 
   if (!empnit || !empresa || !clave) {
@@ -128,21 +129,35 @@ router.put('/:empnit', authMiddleware, rootOnly, async (req, res) => {
 
   try {
     const pool = await getPool();
-    const result = await pool
+    const request = pool
       .request()
       .input('empnit', sql.VarChar(50), empnit)
       .input('empresa', sql.VarChar(350), empresa)
       .input('clave', sql.VarChar(250), clave)
-      .input('tipo', sql.VarChar(50), tipo)
-      .input('habilitado', sql.VarChar(2), habilitado)
-      .query(`
+      .input('tipo', sql.VarChar(50), tipo);
+
+    const updateQuery = hasHabilitado
+      ? `
         UPDATE EMPRESAS
         SET EMPRESA = @empresa,
             CLAVE = @clave,
             TIPO = @tipo,
             HABILITADO = @habilitado
         WHERE RTRIM(LTRIM(EMPNIT)) = @empnit
-      `);
+      `
+      : `
+        UPDATE EMPRESAS
+        SET EMPRESA = @empresa,
+            CLAVE = @clave,
+            TIPO = @tipo
+        WHERE RTRIM(LTRIM(EMPNIT)) = @empnit
+      `;
+
+    if (hasHabilitado) {
+      request.input('habilitado', sql.VarChar(2), habilitado);
+    }
+
+    const result = await request.query(updateQuery);
 
     if (!result.rowsAffected[0]) {
       return res.status(404).json({ message: 'Empresa no encontrada' });

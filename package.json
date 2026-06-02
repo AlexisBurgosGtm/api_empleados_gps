@@ -4,6 +4,7 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
+    "test": "nodemon src/index.js",
     "dev": "node --watch src/index.js"
   },
   "dependencies": {
@@ -11,6 +12,7 @@
     "express": "^4.21.0",
     "jsonwebtoken": "^9.0.2",
     "mssql": "^11.0.1",
+    "nodemon": "^3.1.14",
     "rn-gps-background": "file:.."
   }
 }

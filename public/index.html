@@ -3,7 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SALES TRACK</title>
+  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="WEB SALES TRACK" />
+  <title>WEB SALES TRACK</title>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" type="image/png" href="/icons/flota.png" />
+  <link rel="apple-touch-icon" href="/icons/flota.png" />
   <link
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
     rel="stylesheet"
@@ -12,8 +20,7 @@
   />
   <link
     rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-    integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsbqTkldfzh3qN/YkHz40GK2Y4vNXDv3+9Gi9sDqQ=="
+    href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/all.min.css"
     crossorigin="anonymous"
     referrerpolicy="no-referrer"
   />
@@ -26,252 +33,7 @@
   <link rel="stylesheet" href="/css/app.css" />
 </head>
 <body>
-  <div id="app">
-    <section id="view-login" class="view active">
-      <div class="login-shell">
-        <div class="login-card shadow-lg">
-          <div class="login-brand">
-            <div class="brand-icon">
-              <i class="fa-solid fa-location-dot"></i>
-            </div>
-            <h1 class="login-title">SALES TRACK</h1>
-            <p class="login-subtitle">Seguimiento en tiempo real</p>
-          </div>
-
-          <form id="login-form" class="login-form" novalidate>
-            <div class="mb-3">
-              <label for="empnit" class="form-label">Usuario (EMPNIT)</label>
-              <input
-                type="text"
-                class="form-control form-control-lg"
-                id="empnit"
-                name="empnit"
-                autocomplete="username"
-                placeholder="Ingrese su EMPNIT"
-                required
-              />
-            </div>
-            <div class="mb-4">
-              <label for="clave" class="form-label">Contraseña</label>
-              <input
-                type="password"
-                class="form-control form-control-lg"
-                id="clave"
-                name="clave"
-                autocomplete="current-password"
-                placeholder="Ingrese su clave"
-                required
-              />
-            </div>
-            <button type="submit" class="btn btn-dark btn-lg w-100 login-btn" id="login-btn">
-              Iniciar sesión
-            </button>
-          </form>
-        </div>
-      </div>
-    </section>
-
-    <section id="view-root" class="view">
-      <nav id="root-navbar" class="navbar navbar-expand-lg navbar-dark root-navbar hidden">
-        <div class="container-fluid">
-          <span class="navbar-brand mb-0">
-            <i class="fa-solid fa-location-dot me-2"></i>SALES TRACK
-          </span>
-          <button
-            class="navbar-toggler"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#rootNavCollapse"
-            aria-controls="rootNavCollapse"
-            aria-expanded="false"
-            aria-label="Alternar navegacion"
-          >
-            <span class="navbar-toggler-icon"></span>
-          </button>
-          <div class="collapse navbar-collapse" id="rootNavCollapse">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-              <li class="nav-item">
-                <button type="button" class="nav-link root-nav-btn active" data-panel="mapa">
-                  <i class="fa-solid fa-map me-2"></i>MAPA
-                </button>
-              </li>
-              <li class="nav-item">
-                <button type="button" class="nav-link root-nav-btn" data-panel="empresas">
-                  <i class="fa-solid fa-building me-2"></i>EMPRESAS
-                </button>
-              </li>
-            </ul>
-            <button type="button" class="btn btn-outline-light btn-sm" id="root-logout-btn">
-              <i class="fa-solid fa-right-from-bracket me-1"></i>Salir
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      <div class="root-body">
-        <section id="view-dashboard" class="root-panel active">
-          <header class="dashboard-header">
-            <div class="header-left">
-              <span class="header-badge">Empresa</span>
-              <h2 id="empresa-nombre" class="header-title">—</h2>
-            </div>
-            <div class="header-actions">
-              <label class="date-filter-label" for="fecha-filtro">Fecha</label>
-              <input type="date" id="fecha-filtro" class="form-control form-control-sm date-filter" />
-              <span id="empleados-count" class="header-meta">0 empleados</span>
-              <button type="button" class="btn btn-outline-light btn-sm" id="refresh-btn">
-                <i class="fa-solid fa-rotate"></i>
-                Refrescar
-              </button>
-              <button type="button" class="btn btn-light btn-sm client-logout-btn" id="logout-btn">
-                Salir
-              </button>
-            </div>
-          </header>
-          <main class="dashboard-main">
-            <div id="map"></div>
-            <div id="map-loading" class="map-loading d-none">
-              <div class="spinner-border text-light" role="status">
-                <span class="visually-hidden">Cargando...</span>
-              </div>
-            </div>
-          </main>
-        </section>
-
-        <section id="view-employee" class="root-panel">
-          <header class="dashboard-header">
-            <div class="header-left">
-              <button type="button" class="btn btn-outline-light btn-sm" id="back-btn">
-                <i class="fa-solid fa-arrow-left"></i>
-                Volver
-              </button>
-              <div class="employee-title-wrap">
-                <span class="header-badge">Empleado</span>
-                <h2 id="employee-nombre" class="header-title">—</h2>
-              </div>
-            </div>
-            <div class="header-actions">
-              <span id="employee-fecha" class="header-meta"></span>
-              <span id="employee-codigo" class="header-meta"></span>
-            </div>
-          </header>
-          <main class="employee-main">
-            <div class="employee-panel employee-panel-left">
-              <div class="detail-card">
-                <div class="detail-card-header">
-                  <h3>Sin ubicación</h3>
-                  <span id="sin-ubicacion-count" class="detail-count">0 registros</span>
-                </div>
-                <div class="detail-table-wrap">
-                  <table class="table table-dark table-sm detail-table mb-0">
-                    <thead>
-                      <tr>
-                        <th>Hora</th>
-                      </tr>
-                    </thead>
-                    <tbody id="sin-ubicacion-body">
-                      <tr>
-                        <td class="text-muted">Sin registros</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-            <div class="employee-panel employee-panel-right">
-              <div id="employee-map"></div>
-              <div id="employee-map-loading" class="map-loading d-none">
-                <div class="spinner-border text-light" role="status">
-                  <span class="visually-hidden">Cargando...</span>
-                </div>
-              </div>
-            </div>
-          </main>
-        </section>
-
-        <section id="view-empresas" class="root-panel">
-          <header class="dashboard-header">
-            <div class="header-left">
-              <span class="header-badge">Administración</span>
-              <h2 class="header-title">Empresas</h2>
-            </div>
-            <div class="header-actions">
-              <button type="button" class="btn btn-light btn-sm" id="empresa-new-btn">
-                <i class="fa-solid fa-plus"></i>
-                Nueva empresa
-              </button>
-            </div>
-          </header>
-          <main class="empresas-main">
-            <div class="empresas-table-wrap">
-              <table class="table table-dark empresas-table mb-0">
-                <thead>
-                  <tr>
-                    <th>EMPNIT</th>
-                    <th>Empresa</th>
-                    <th>Tipo</th>
-                    <th>Clave</th>
-                    <th>Habilitado</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody id="empresas-body">
-                  <tr>
-                    <td colspan="6" class="text-muted text-center">Cargando...</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </main>
-        </section>
-      </div>
-    </section>
-  </div>
-
-  <div class="modal fade" id="empresa-modal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content empresa-modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="empresa-modal-title">Nueva empresa</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-        </div>
-        <form id="empresa-form">
-          <div class="modal-body">
-            <div class="mb-3">
-              <label for="empresa-empnit" class="form-label">EMPNIT</label>
-              <input type="text" class="form-control" id="empresa-empnit" required />
-            </div>
-            <div class="mb-3">
-              <label for="empresa-nombre-input" class="form-label">Empresa</label>
-              <input type="text" class="form-control" id="empresa-nombre-input" required />
-            </div>
-            <div class="mb-3">
-              <label for="empresa-clave" class="form-label">Clave</label>
-              <input type="text" class="form-control" id="empresa-clave" required />
-            </div>
-            <div class="mb-3">
-              <label for="empresa-tipo" class="form-label">Tipo</label>
-              <select class="form-select" id="empresa-tipo">
-                <option value="CLIENTE">CLIENTE</option>
-                <option value="ROOT">ROOT</option>
-              </select>
-            </div>
-            <div class="mb-0">
-              <label for="empresa-habilitado" class="form-label">Habilitado</label>
-              <select class="form-select" id="empresa-habilitado">
-                <option value="SI">SI</option>
-                <option value="NO">NO</option>
-              </select>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-light">Guardar</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
+  <div id="app" class="spa-app"></div>
 
   <script
     src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
@@ -284,8 +46,6 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""
   ></script>
-  <script src="/js/root.js"></script>
-  <script src="/js/Empresas.js"></script>
-  <script src="/js/app.js"></script>
+  <script type="module" src="/js/main.js"></script>
 </body>
 </html>
