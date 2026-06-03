@@ -9,11 +9,13 @@ export const createEmployeeIcon = (empleado, fecha, hora) =>
           ${escapeHtml(empleado)}
           <small>${escapeHtml(fecha)} · ${escapeHtml(hora)}</small>
         </div>
-        <div class="employee-pin"></div>
+        <div class="employee-pin">
+          <i class="fa-solid fa-user-location" aria-hidden="true"></i>
+        </div>
       </div>
     `,
-    iconSize: [180, 56],
-    iconAnchor: [90, 56],
+    iconSize: [29, 29],
+    iconAnchor: [15, 29],
   });
 
 export const createRouteIcon = (hora) =>
@@ -25,9 +27,56 @@ export const createRouteIcon = (hora) =>
         <div class="route-marker-pin"></div>
       </div>
     `,
-    iconSize: [0, 0],
-    iconAnchor: [0, 0],
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
   });
+
+export const createRoutePolyline = (latLngs) => {
+  if (!latLngs || latLngs.length < 2) {
+    return null;
+  }
+
+  return L.polyline(latLngs, {
+    color: '#dc2626',
+    weight: 4,
+    opacity: 0.9,
+    lineJoin: 'round',
+    lineCap: 'round',
+  });
+};
+
+export const bindRouteMarkerToggle = (marker, layerGroup, map) => {
+  const closeAllRouteLabels = () => {
+    layerGroup?.eachLayer((layer) => {
+      layer.getElement?.()
+        ?.querySelector('.route-marker-wrap')
+        ?.classList.remove('is-open');
+    });
+  };
+
+  marker.on('click', (event) => {
+    L.DomEvent.stopPropagation(event);
+
+    const wrap = marker.getElement()?.querySelector('.route-marker-wrap');
+    if (!wrap) {
+      return;
+    }
+
+    const wasOpen = wrap.classList.contains('is-open');
+    closeAllRouteLabels();
+
+    if (!wasOpen) {
+      wrap.classList.add('is-open');
+    }
+  });
+
+  if (map && !map._routeLabelCloseBound) {
+    map.on('click', closeAllRouteLabels);
+    map._routeLabelCloseBound = true;
+  }
+
+  return closeAllRouteLabels;
+};
 
 export const createMap = (elementId, layerRef) => {
   const map = L.map(elementId, {
