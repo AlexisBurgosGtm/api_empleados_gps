@@ -1,0 +1,8 @@
+-- Agrega STATUS a la tabla EMPLEADOS_GPS (E=enviado, F=fallido/reintento)
+IF NOT EXISTS (
+  SELECT 1 FROM sys.columns
+  WHERE object_id = OBJECT_ID(N'EMPLEADOS_GPS') AND name = 'STATUS'
+)
+BEGIN
+  ALTER TABLE EMPLEADOS_GPS ADD STATUS VARCHAR(1) NULL;
+END;
