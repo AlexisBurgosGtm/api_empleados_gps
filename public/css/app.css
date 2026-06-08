@@ -265,6 +265,10 @@ body {
   cursor: pointer;
 }
 
+.date-filter::-webkit-datetime-edit-fields-wrapper {
+  color: var(--text-primary);
+}
+
 /* Map */
 .map-stage {
   position: relative;

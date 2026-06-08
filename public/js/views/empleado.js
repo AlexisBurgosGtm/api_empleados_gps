@@ -9,6 +9,8 @@ import { createRouteIcon, bindRouteMarkerToggle, createRoutePolyline, createMap,
 export const mount = async (root, params) => {
   const codigo = params.codigo;
   let fecha = getSelectedFecha();
+  let horaInicio = '00:00';
+  let horaFin = '23:59';
   const mapRef = { current: null };
   const layerRef = { current: null };
 
@@ -23,6 +25,10 @@ export const mount = async (root, params) => {
         </a>
         <span id="employee-fecha" class="header-meta"></span>
         <span id="employee-codigo" class="header-meta"></span>
+        <label class="date-filter-label" for="hora-inicio-filtro">Desde</label>
+        <input type="time" id="hora-inicio-filtro" class="form-control form-control-sm date-filter" value="${horaInicio}" />
+        <label class="date-filter-label" for="hora-fin-filtro">Hasta</label>
+        <input type="time" id="hora-fin-filtro" class="form-control form-control-sm date-filter" value="${horaFin}" />
       `,
     }),
     body: `
@@ -41,6 +47,8 @@ export const mount = async (root, params) => {
   const titleEl = () => root.querySelector('.page-title');
   const fechaEl = () => root.querySelector('#employee-fecha');
   const codigoEl = () => root.querySelector('#employee-codigo');
+  const horaInicioInput = () => root.querySelector('#hora-inicio-filtro');
+  const horaFinInput = () => root.querySelector('#hora-fin-filtro');
   const loadingEl = () => root.querySelector('#employee-map-loading');
 
   const setLoading = (visible) => {
@@ -83,14 +91,24 @@ export const mount = async (root, params) => {
     setLoading(true);
 
     try {
+      const query = new URLSearchParams({
+        fecha,
+        horaInicio,
+        horaFin,
+      });
+
       const payload = await apiGet(
-        `/api/tracking/${encodeURIComponent(codigo)}?fecha=${encodeURIComponent(fecha)}`,
+        `/api/tracking/${encodeURIComponent(codigo)}?${query.toString()}`,
       );
 
       fecha = payload.fecha || fecha;
+      horaInicio = payload.horaInicio || horaInicio;
+      horaFin = payload.horaFin || horaFin;
       titleEl().textContent = payload.empleado || '—';
       fechaEl().textContent = payload.fecha ? `Fecha: ${formatFechaDisplay(payload.fecha)}` : '';
       codigoEl().textContent = payload.codigo ? `CODIGO: ${payload.codigo}` : '';
+      horaInicioInput().value = horaInicio;
+      horaFinInput().value = horaFin;
 
       if (!mapRef.current) {
         mapRef.current = createMap('employee-map', layerRef);
@@ -107,10 +125,30 @@ export const mount = async (root, params) => {
     }
   };
 
+  const onTimeFilterChange = () => {
+    const nextInicio = horaInicioInput()?.value.trim() || '00:00';
+    const nextFin = horaFinInput()?.value.trim() || '23:59';
+
+    if (nextInicio > nextFin) {
+      void alertError('Horario invalido', 'La hora inicio debe ser menor o igual a la hora fin.');
+      horaInicioInput().value = horaInicio;
+      horaFinInput().value = horaFin;
+      return;
+    }
+
+    horaInicio = nextInicio;
+    horaFin = nextFin;
+    void loadDetail();
+  };
+
+  horaInicioInput()?.addEventListener('change', onTimeFilterChange);
+  horaFinInput()?.addEventListener('change', onTimeFilterChange);
+
   await loadDetail();
 
   return () => {
+    horaInicioInput()?.removeEventListener('change', onTimeFilterChange);
+    horaFinInput()?.removeEventListener('change', onTimeFilterChange);
     destroyMap(mapRef, layerRef);
   };
 };
-

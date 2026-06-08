@@ -13,6 +13,15 @@ const parseFechaQuery = (value) => {
   return fecha;
 };
 
+const parseHoraQuery = (value, fallback) => {
+  const hora = String(value ?? fallback ?? '').trim();
+  if (!/^\d{2}:\d{2}$/.test(hora)) {
+    return fallback ?? null;
+  }
+
+  return hora;
+};
+
 router.get('/', authMiddleware, async (req, res) => {
   const empnit = req.user.empnit;
   const fecha = parseFechaQuery(req.query.fecha);
@@ -103,6 +112,8 @@ router.get('/:codigo', authMiddleware, async (req, res) => {
   const empnit = req.user.empnit;
   const codigo = String(req.params.codigo ?? '').trim();
   const fecha = parseFechaQuery(req.query.fecha);
+  const horaInicio = parseHoraQuery(req.query.horaInicio, '00:00');
+  const horaFin = parseHoraQuery(req.query.horaFin, '23:59');
 
   if (!codigo) {
     return res.status(400).json({ message: 'Codigo de empleado requerido' });
@@ -110,6 +121,14 @@ router.get('/:codigo', authMiddleware, async (req, res) => {
 
   if (!fecha) {
     return res.status(400).json({ message: 'Fecha invalida o requerida' });
+  }
+
+  if (!horaInicio || !horaFin) {
+    return res.status(400).json({ message: 'Horario invalido' });
+  }
+
+  if (horaInicio > horaFin) {
+    return res.status(400).json({ message: 'Hora inicio debe ser menor o igual a hora fin' });
   }
 
   try {
@@ -137,11 +156,15 @@ router.get('/:codigo', authMiddleware, async (req, res) => {
       .request()
       .input('codigo', sql.VarChar(50), codigo)
       .input('fecha', sql.Date, fecha)
+      .input('horaInicio', sql.VarChar(5), horaInicio)
+      .input('horaFin', sql.VarChar(5), horaFin)
       .query(`
         SELECT ID, HORA, LATITUD, LONGITUD
         FROM EMPLEADOS_GPS
         WHERE CODIGO = @codigo
           AND FECHA = @fecha
+          AND HORA >= @horaInicio
+          AND HORA <= @horaFin
         ORDER BY ID
       `);
 
@@ -173,6 +196,8 @@ router.get('/:codigo', authMiddleware, async (req, res) => {
       codigo: empleado.CODIGO,
       empleado: empleado.EMPLEADO,
       fecha,
+      horaInicio,
+      horaFin,
       conUbicacion,
       sinUbicacion,
     });

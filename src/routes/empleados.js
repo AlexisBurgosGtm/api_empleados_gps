@@ -5,13 +5,22 @@ const { rootOnly } = require('../middleware/rootOnly');
 
 const router = express.Router();
 
+const TIPOS_EMPLEADO = ['VENDEDOR', 'TECNICO', 'SUPERVISOR', 'REPARTIDOR', 'PILOTO'];
+
 const normalizeHabilitado = (value) =>
   String(value ?? 'SI').trim().toUpperCase() === 'NO' ? 'NO' : 'SI';
+
+const normalizeTipo = (value) => {
+  const tipo = String(value ?? '').trim().toUpperCase();
+  return TIPOS_EMPLEADO.includes(tipo) ? tipo : '';
+};
 
 const mapEmpleado = (row) => ({
   empnit: String(row.EMPNIT ?? '').trim(),
   codigo: String(row.CODIGO ?? '').trim(),
   empleado: String(row.EMPLEADO ?? '').trim(),
+  tipo: normalizeTipo(row.TIPO),
+  telefono: String(row.TELEFONO ?? '').trim(),
   habilitado: normalizeHabilitado(row.HABILITADO),
 });
 
@@ -78,7 +87,7 @@ router.get('/', authMiddleware, rootOnly, async (req, res) => {
       .request()
       .input('empnit', sql.VarChar(50), empnit)
       .query(`
-        SELECT EMPNIT, CODIGO, EMPLEADO, HABILITADO
+        SELECT EMPNIT, CODIGO, EMPLEADO, TIPO, TELEFONO, HABILITADO
         FROM EMPLEADOS
         WHERE RTRIM(LTRIM(EMPNIT)) = @empnit
         ORDER BY EMPLEADO
@@ -98,10 +107,12 @@ router.post('/', authMiddleware, rootOnly, async (req, res) => {
   const empnit = String(req.body?.empnit ?? '').trim();
   const codigo = String(req.body?.codigo ?? '').trim();
   const empleado = String(req.body?.empleado ?? '').trim();
+  const tipo = normalizeTipo(req.body?.tipo);
+  const telefono = String(req.body?.telefono ?? '').trim();
   const habilitado = normalizeHabilitado(req.body?.habilitado);
 
-  if (!empnit || !codigo || !empleado) {
-    return res.status(400).json({ message: 'Empresa, CODIGO y EMPLEADO son requeridos' });
+  if (!empnit || !codigo || !empleado || !tipo) {
+    return res.status(400).json({ message: 'Empresa, CODIGO, EMPLEADO y TIPO son requeridos' });
   }
 
   try {
@@ -125,10 +136,12 @@ router.post('/', authMiddleware, rootOnly, async (req, res) => {
       .input('empnit', sql.VarChar(50), empnit)
       .input('codigo', sql.VarChar(250), codigo)
       .input('empleado', sql.VarChar(250), empleado)
+      .input('tipo', sql.VarChar(150), tipo)
+      .input('telefono', sql.VarChar(50), telefono)
       .input('habilitado', sql.VarChar(2), habilitado)
       .query(`
-        INSERT INTO EMPLEADOS (EMPNIT, CODIGO, EMPLEADO, HABILITADO)
-        VALUES (@empnit, @codigo, @empleado, @habilitado)
+        INSERT INTO EMPLEADOS (EMPNIT, CODIGO, EMPLEADO, TIPO, TELEFONO, HABILITADO)
+        VALUES (@empnit, @codigo, @empleado, @tipo, @telefono, @habilitado)
       `);
 
     return res.status(201).json({ message: 'Empleado creado' });
@@ -146,11 +159,13 @@ router.put('/:empnit/:codigo', authMiddleware, rootOnly, async (req, res) => {
   const empnit = String(req.params.empnit ?? '').trim();
   const codigo = String(req.params.codigo ?? '').trim();
   const empleado = String(req.body?.empleado ?? '').trim();
+  const tipo = normalizeTipo(req.body?.tipo);
+  const telefono = String(req.body?.telefono ?? '').trim();
   const hasHabilitado = req.body?.habilitado !== undefined && req.body?.habilitado !== null;
   const habilitado = normalizeHabilitado(req.body?.habilitado);
 
-  if (!empnit || !codigo || !empleado) {
-    return res.status(400).json({ message: 'Empresa, CODIGO y EMPLEADO son requeridos' });
+  if (!empnit || !codigo || !empleado || !tipo) {
+    return res.status(400).json({ message: 'Empresa, CODIGO, EMPLEADO y TIPO son requeridos' });
   }
 
   try {
@@ -159,19 +174,25 @@ router.put('/:empnit/:codigo', authMiddleware, rootOnly, async (req, res) => {
       .request()
       .input('empnit', sql.VarChar(50), empnit)
       .input('codigo', sql.VarChar(250), codigo)
-      .input('empleado', sql.VarChar(250), empleado);
+      .input('empleado', sql.VarChar(250), empleado)
+      .input('tipo', sql.VarChar(150), tipo)
+      .input('telefono', sql.VarChar(50), telefono);
 
     const updateQuery = hasHabilitado
       ? `
         UPDATE EMPLEADOS
         SET EMPLEADO = @empleado,
+            TIPO = @tipo,
+            TELEFONO = @telefono,
             HABILITADO = @habilitado
         WHERE RTRIM(LTRIM(EMPNIT)) = @empnit
           AND RTRIM(LTRIM(CODIGO)) = @codigo
       `
       : `
         UPDATE EMPLEADOS
-        SET EMPLEADO = @empleado
+        SET EMPLEADO = @empleado,
+            TIPO = @tipo,
+            TELEFONO = @telefono
         WHERE RTRIM(LTRIM(EMPNIT)) = @empnit
           AND RTRIM(LTRIM(CODIGO)) = @codigo
       `;

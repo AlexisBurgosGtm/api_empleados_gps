@@ -5,6 +5,18 @@ import { escapeHtml } from '../core/utils.js';
 import { renderAppPage, renderPageHeader, bindLogout } from '../components/layout.js';
 import { iconEdit, iconPlus, iconTrash } from '../components/icons.js';
 
+const TIPOS_EMPLEADO = ['VENDEDOR', 'TECNICO', 'SUPERVISOR', 'REPARTIDOR', 'PILOTO'];
+
+const renderTipoOptions = (selected = '') =>
+  ['<option value="">Seleccione tipo</option>']
+    .concat(
+      TIPOS_EMPLEADO.map((tipo) => {
+        const isSelected = String(selected).trim().toUpperCase() === tipo;
+        return `<option value="${tipo}" ${isSelected ? 'selected' : ''}>${tipo}</option>`;
+      }),
+    )
+    .join('');
+
 export const mount = async (root) => {
   let empresasCache = [];
   let empleadosCache = [];
@@ -34,12 +46,14 @@ export const mount = async (root) => {
                   <tr>
                     <th>Código</th>
                     <th>Empleado</th>
+                    <th>Tipo</th>
+                    <th>Teléfono</th>
                     <th>Habilitado</th>
                     <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody id="empleados-body">
-                  <tr><td colspan="4" class="text-muted text-center">Seleccione una empresa</td></tr>
+                  <tr><td colspan="6" class="text-muted text-center">Seleccione una empresa</td></tr>
                 </tbody>
               </table>
             </div>
@@ -75,9 +89,19 @@ export const mount = async (root) => {
                   <label for="empleado-codigo" class="form-label">Código</label>
                   <input type="text" class="form-control" id="empleado-codigo" required />
                 </div>
-                <div class="mb-0">
+                <div class="mb-3">
                   <label for="empleado-nombre" class="form-label">Empleado</label>
                   <input type="text" class="form-control" id="empleado-nombre" required />
+                </div>
+                <div class="mb-3">
+                  <label for="empleado-tipo" class="form-label">Tipo</label>
+                  <select class="form-select" id="empleado-tipo" required>
+                    ${renderTipoOptions()}
+                  </select>
+                </div>
+                <div class="mb-0">
+                  <label for="empleado-telefono" class="form-label">Teléfono</label>
+                  <input type="text" class="form-control" id="empleado-telefono" />
                 </div>
               </div>
               <div class="modal-footer">
@@ -139,14 +163,14 @@ export const mount = async (root) => {
   const renderRows = (empleados) => {
     if (!selectedEmpnit) {
       tbody().innerHTML = `
-        <tr><td colspan="4" class="text-muted text-center">Seleccione una empresa</td></tr>
+        <tr><td colspan="6" class="text-muted text-center">Seleccione una empresa</td></tr>
       `;
       return;
     }
 
     if (!empleados.length) {
       tbody().innerHTML = `
-        <tr><td colspan="4" class="text-muted text-center">Sin empleados registrados</td></tr>
+        <tr><td colspan="6" class="text-muted text-center">Sin empleados registrados</td></tr>
       `;
       return;
     }
@@ -157,6 +181,8 @@ export const mount = async (root) => {
           <tr>
             <td>${escapeHtml(item.codigo)}</td>
             <td>${escapeHtml(item.empleado)}</td>
+            <td>${item.tipo ? `<span class="tipo-badge">${escapeHtml(item.tipo)}</span>` : '—'}</td>
+            <td>${escapeHtml(item.telefono || '—')}</td>
             <td>
               <button
                 type="button"
@@ -200,7 +226,7 @@ export const mount = async (root) => {
     }
 
     tbody().innerHTML = `
-      <tr><td colspan="4" class="text-muted text-center">Cargando...</td></tr>
+      <tr><td colspan="6" class="text-muted text-center">Cargando...</td></tr>
     `;
     setFabEnabled(true);
 
@@ -216,7 +242,7 @@ export const mount = async (root) => {
           ? 'Acceso denegado. Inicie sesión con un usuario ROOT.'
           : error.message;
       tbody().innerHTML = `
-        <tr><td colspan="4" class="text-danger text-center">${escapeHtml(message)}</td></tr>
+        <tr><td colspan="6" class="text-danger text-center">${escapeHtml(message)}</td></tr>
       `;
       setFabEnabled(false);
     }
@@ -244,6 +270,8 @@ export const mount = async (root) => {
     root.querySelector('#empleado-codigo').value = empleado?.codigo ?? '';
     root.querySelector('#empleado-codigo').disabled = Boolean(editingCodigo);
     root.querySelector('#empleado-nombre').value = empleado?.empleado ?? '';
+    root.querySelector('#empleado-tipo').innerHTML = renderTipoOptions(empleado?.tipo ?? '');
+    root.querySelector('#empleado-telefono').value = empleado?.telefono ?? '';
     getModal()?.show();
   };
 
@@ -253,9 +281,11 @@ export const mount = async (root) => {
     const empnit = modalEmpresaSelect().value.trim();
     const codigo = root.querySelector('#empleado-codigo').value.trim();
     const empleado = root.querySelector('#empleado-nombre').value.trim();
+    const tipo = root.querySelector('#empleado-tipo').value.trim();
+    const telefono = root.querySelector('#empleado-telefono').value.trim();
 
-    if (!empnit || !codigo || !empleado) {
-      await alertWarning('Campos requeridos', 'Complete empresa, código y nombre.');
+    if (!empnit || !codigo || !empleado || !tipo) {
+      await alertWarning('Campos requeridos', 'Complete empresa, código, nombre y tipo.');
       return;
     }
 
@@ -265,8 +295,8 @@ export const mount = async (root) => {
       : '/api/empleados';
 
     const body = isEdit
-      ? { empleado }
-      : { empnit, codigo, empleado, habilitado: 'SI' };
+      ? { empleado, tipo, telefono }
+      : { empnit, codigo, empleado, tipo, telefono, habilitado: 'SI' };
 
     try {
       if (isEdit) {
@@ -368,6 +398,7 @@ export const mount = async (root) => {
     root.querySelector('#empleado-codigo').disabled = false;
     modalEmpresaSelect().disabled = false;
     form()?.reset();
+    root.querySelector('#empleado-tipo').innerHTML = renderTipoOptions();
     renderEmpresaOptions(modalEmpresaSelect(), { selected: selectedEmpnit });
   };
 
