@@ -2,6 +2,7 @@ import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from '../core/api.js';
 import { logout, toast, alertError, alertWarning, confirmDialog } from '../core/auth.js';
 import { navigate } from '../core/router.js';
 import { escapeHtml } from '../core/utils.js';
+import { isFormSubmitting, setFormSubmitting } from '../core/formSubmitLock.js';
 import { renderAppPage, renderPageHeader, bindLogout } from '../components/layout.js';
 import { iconEdit, iconPlus, iconTrash } from '../components/icons.js';
 
@@ -83,7 +84,7 @@ export const mount = async (root) => {
               </div>
               <div class="modal-footer">
                 <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancelar</button>
-                <button type="submit" class="btn btn-light">Guardar</button>
+                <button type="submit" class="btn btn-light" id="empresa-submit-btn">Guardar</button>
               </div>
             </form>
           </div>
@@ -175,11 +176,17 @@ export const mount = async (root) => {
     root.querySelector('#empresa-nombre-input').value = empresa?.empresa ?? '';
     root.querySelector('#empresa-clave').value = empresa?.clave ?? '';
     root.querySelector('#empresa-tipo').value = empresa?.tipo ?? 'CLIENTE';
+    setFormSubmitting(form(), false);
     getModal()?.show();
   };
 
   const onSave = async (event) => {
     event.preventDefault();
+
+    const formEl = form();
+    if (isFormSubmitting(formEl)) {
+      return;
+    }
 
     const body = {
       empnit: root.querySelector('#empresa-empnit').value.trim(),
@@ -202,6 +209,8 @@ export const mount = async (root) => {
       ? `/api/empresas/${encodeURIComponent(editingEmpnit)}`
       : '/api/empresas';
 
+    setFormSubmitting(formEl, true);
+
     try {
       if (isEdit) {
         await apiPut(url, body);
@@ -218,6 +227,8 @@ export const mount = async (root) => {
       if (error.message !== 'Sesión expirada') {
         await alertError('Error', error.message);
       }
+    } finally {
+      setFormSubmitting(formEl, false);
     }
   };
 
@@ -282,6 +293,7 @@ export const mount = async (root) => {
     editingEmpnit = null;
     root.querySelector('#empresa-empnit').disabled = false;
     form()?.reset();
+    setFormSubmitting(form(), false);
   };
 
   const onLogout = async () => {
